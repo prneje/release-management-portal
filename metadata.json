@@ -1,0 +1,5 @@
+{
+  "name": "Release Management Portal",
+  "description": "A portal for release managers to track the status of software releases, including team sign-offs and component scan results.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,103 @@
+<div class="bg-slate-100 dark:bg-slate-800 min-h-screen">
+  <div class="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Release Dashboard</h1>
+        @if(canCreateRelease()) {
+          <button (click)="openCreateModal()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+              <path
+                d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+            </svg>
+            New Release
+          </button>
+        }
+      </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8 p-4 bg-white dark:bg-slate-800/50 rounded-lg shadow">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="release-number-search" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Search by Release Number</label>
+          <input type="text" id="release-number-search"
+                 [value]="versionFilter()"
+                 (input)="versionFilter.set($any($event.target).value)"
+                 class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                 placeholder="e.g., 2.1.0">
+        </div>
+        <div>
+          <label for="start-date-filter" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Start Date</label>
+          <input type="date" id="start-date-filter"
+                 [value]="startDateFilter()"
+                 (input)="startDateFilter.set($any($event.target).value)"
+                 class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="end-date-filter" class="block text-sm font-medium text-slate-700 dark:text-slate-300">End Date</label>
+          <input type="date" id="end-date-filter"
+                 [value]="endDateFilter()"
+                 (input)="endDateFilter.set($any($event.target).value)"
+                 class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800/50 rounded-lg shadow overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+        <thead class="bg-slate-50 dark:bg-slate-800">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Release Number</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Name</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Status</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Target Date</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Involved Teams</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-slate-800/50 divide-y divide-slate-200 dark:divide-slate-700">
+          @for (release of releases(); track release.id) {
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150 group">
+              <td (click)="navigateToRelease(release.id)" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-sky-600 dark:text-sky-400 group-hover:underline cursor-pointer">{{ release.version }}</td>
+              <td (click)="navigateToRelease(release.id)" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:underline cursor-pointer">{{ release.name }}</td>
+              <td (click)="navigateToRelease(release.id)" class="px-6 py-4 whitespace-nowrap text-sm cursor-pointer">
+                <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getStatusColor(release.status)">
+                  {{ release.status }}
+                </span>
+              </td>
+              <td (click)="navigateToRelease(release.id)" class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 cursor-pointer">{{ release.releaseDate }}</td>
+              <td (click)="navigateToRelease(release.id)" class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 cursor-pointer">
+                 @if(release.teams.length > 0) {
+                    <div class="flex flex-wrap gap-1">
+                      @for(team of release.teams; track team.id) {
+                        <span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 rounded-md">{{ team.name }}</span>
+                      }
+                    </div>
+                 } @else {
+                    <span class="text-xs text-slate-400">No projects assigned.</span>
+                 }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                @if(canCreateRelease()) {
+                  <button (click)="deleteRelease(release.id, $event)" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
+                    Delete
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                No releases found matching your criteria.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+@if (isCreateModalOpen()) {
+  <app-create-release (closeModal)="closeCreateModal()"></app-create-release>
+}

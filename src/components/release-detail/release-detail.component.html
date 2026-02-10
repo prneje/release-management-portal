@@ -1,0 +1,359 @@
+<div class="bg-slate-50 dark:bg-slate-900 min-h-screen pb-12">
+  @if (release(); as r) {
+  <div class="bg-white dark:bg-slate-800/50 shadow-sm sticky top-[61px] z-10 backdrop-blur-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex items-center justify-between">
+        <button (click)="goBack()"
+          class="flex items-center gap-2 text-sm font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+            <path fill-rule="evenodd"
+              d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z"
+              clip-rule="evenodd" />
+          </svg>
+          Back to Dashboard
+        </button>
+        @if(canExportReport()) {
+        <button (click)="exportReleaseStatusAsCSV()"
+          class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-md shadow-sm border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 dark:ring-offset-slate-900 transition ease-in-out duration-150">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+            <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+            <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+          </svg>
+          Export CSV
+        </button>
+        }
+      </div>
+      <div class="mt-4">
+        @if (!editingRelease()) {
+          <div class="flex items-start justify-between">
+            <div>
+              <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Release {{ r.version }}</h1>
+              <p class="text-slate-500 dark:text-slate-400 mt-1">{{ r.name }} | Target Date: {{ r.releaseDate }}</p>
+            </div>
+            @if(canManageRelease()) {
+              <button (click)="startEditRelease()" class="text-sm font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 transition-colors">Edit</button>
+            }
+          </div>
+        } @else {
+          <form [formGroup]="releaseForm" (ngSubmit)="saveRelease()" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <input formControlName="version" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white" placeholder="Version">
+              <input formControlName="name" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-500 dark:text-slate-400 sm:col-span-2" placeholder="Release Name">
+            </div>
+             <input type="date" formControlName="releaseDate" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-500 dark:text-slate-400">
+            <div class="flex gap-2">
+              <button type="submit" [disabled]="releaseForm.invalid" class="px-3 py-1 text-sm font-semibold bg-sky-600 text-white rounded-md hover:bg-sky-700 disabled:opacity-50">Save</button>
+              <button type="button" (click)="cancelEditRelease()" class="px-3 py-1 text-sm font-semibold bg-slate-200 dark:bg-slate-600 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500">Cancel</button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+     <!-- Master Approval Section -->
+    @if (canManageAppOwnerApproval()) {
+      <div class="bg-sky-50 dark:bg-sky-900/50 border-2 border-dashed border-sky-300 dark:border-sky-700 rounded-xl p-6 mb-8">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-sky-900 dark:text-sky-100">Master Release Approval</h2>
+              <p class="text-sky-700 dark:text-sky-300 mt-1">This action provides the final sign-off for the entire release.</p>
+            </div>
+            <div class="flex flex-col gap-2 items-start sm:items-end">
+              <span [class]="'inline-block px-3 py-1 text-sm font-semibold rounded-full ' + getApprovalStatusColor(r.overallAppOwnerSignedOff)">
+                Overall Status: {{ r.overallAppOwnerSignedOff }}
+              </span>
+              <button (click)="toggleOverallReleaseSignOff(r.overallAppOwnerSignedOff)" [disabled]="!isAllProjectsApproved()"
+                [class]="'w-full sm:w-auto px-4 py-2 font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition ease-in-out duration-150 ' + (r.overallAppOwnerSignedOff === 'Completed' ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-400' : 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-400') + ' disabled:opacity-50 disabled:cursor-not-allowed'">
+                {{ r.overallAppOwnerSignedOff === 'Completed' ? 'Revoke Final Approval' : 'Approve Entire Release' }}
+              </button>
+              @if(!isAllProjectsApproved()) {
+                <p class="text-xs text-amber-600 dark:text-amber-400">All projects must be approved before final release approval.</p>
+              }
+            </div>
+          </div>
+      </div>
+    }
+
+    <!-- Teams Header -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-slate-700 dark:text-slate-200">Teams</h2>
+        @if (canManageRelease()) {
+          <button (click)="openAddTeamModal()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+            Add Team
+          </button>
+        }
+    </div>
+
+
+    <div class="space-y-8">
+      @for(team of r.teams; track team.id) {
+      <div class="bg-white dark:bg-slate-800/50 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+          @if (editingTeamId() !== team.id) {
+            <div>
+              <div class="flex items-center gap-3">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">{{ team.name }}</h2>
+                @if (canManageRelease()) {
+                  <button (click)="startEditTeam(team)" class="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885l10.012-10.012a2 2 0 0 0-2.828-2.828L2.695 14.762Zm12.728-12.728a.5.5 0 0 0 0-.707l-1.414-1.414a.5.5 0 0 0-.707 0L11.95 2.121l2.121 2.121 1.414-1.414Z" /></svg>
+                  </button>
+                  <button (click)="deleteTeam(team.id)" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-1.057.234-1.856.9-2.34 1.693A.75.75 0 0 0 4.25 7H15.75a.75.75 0 0 0 .59-.264c-.484-.792-1.283-1.458-2.34-1.692V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 2.5a1.25 1.25 0 0 1 1.25 1.25v.193a.75.75 0 0 0-.528.232l-.127.127a.75.75 0 0 1-1.06 0l-.127-.127a.75.75 0 0 0-.528-.232V3.75A1.25 1.25 0 0 1 10 2.5ZM3.5 8.75a.75.75 0 0 0-1.5 0v7.5c0 1.519 1.231 2.75 2.75 2.75h10.5A2.75 2.75 0 0 0 18 16.25v-7.5a.75.75 0 0 0-1.5 0v7.5a1.25 1.25 0 0 1-1.25 1.25H4.75A1.25 1.25 0 0 1 3.5 16.25v-7.5Z" clip-rule="evenodd" /></svg>
+                  </button>
+                }
+              </div>
+              <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <span>PO: <span class="font-medium text-slate-600 dark:text-slate-300">{{ team.productOwner }}</span></span>
+                <span class="mx-2">|</span>
+                <span>DL: <span class="font-medium text-slate-600 dark:text-slate-300">{{ team.teamDl }}</span></span>
+              </div>
+              <div class="flex items-center gap-4 mt-3 flex-wrap">
+                <span [class]="'inline-block px-3 py-1 text-xs font-semibold rounded-full ' + getApprovalStatusColor(team.qaSignedOff)">
+                  QA Sign-off: {{ team.qaSignedOff }}
+                </span>
+                 <span [class]="'inline-block px-3 py-1 text-xs font-semibold rounded-full ' + getApprovalStatusColor(team.appOwnerSignedOff)">
+                  Owner Approval: {{ team.appOwnerSignedOff }}
+                </span>
+              </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 self-start sm:self-center flex-wrap">
+               <button (click)="toggleQASignOff(team.id, team.qaSignedOff)" [disabled]="!canManageSignOffs()"
+                [class]="'w-full sm:w-auto px-3 py-1.5 text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed ' + (team.qaSignedOff === 'Completed' ? 'bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-400' : 'bg-teal-500 hover:bg-teal-600 text-white focus:ring-teal-400')">
+                {{ team.qaSignedOff === 'Completed' ? 'Revoke QA' : 'Approve QA' }}
+              </button>
+               <button (click)="toggleAppOwnerSignOff(team.id, team.appOwnerSignedOff)" [disabled]="!canManageAppOwnerApproval()"
+                [class]="'w-full sm:w-auto px-3 py-1.5 text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed ' + (team.appOwnerSignedOff === 'Completed' ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-400' : 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-400')">
+                {{ team.appOwnerSignedOff === 'Completed' ? 'Revoke Project' : 'Approve Project' }}
+              </button>
+            </div>
+          } @else {
+            <div class="w-full">
+              <form [formGroup]="teamForm" (ngSubmit)="saveTeam(team.id)" class="space-y-3">
+                <input formControlName="name" class="w-full text-xl font-bold bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-900 dark:text-white" placeholder="Team Name">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input formControlName="productOwner" class="w-full text-sm bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-500 dark:text-slate-400" placeholder="Product Owner">
+                  <input formControlName="teamDl" class="w-full text-sm bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-500 dark:text-slate-400" placeholder="Team DL">
+                </div>
+                <div class="flex gap-2">
+                  <button type="submit" [disabled]="teamForm.invalid" class="px-3 py-1 text-sm font-semibold bg-sky-600 text-white rounded-md hover:bg-sky-700 disabled:opacity-50">Save</button>
+                  <button type="button" (click)="cancelEditTeam()" class="px-3 py-1 text-sm font-semibold bg-slate-200 dark:bg-slate-600 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500">Cancel</button>
+                </div>
+              </form>
+            </div>
+          }
+        </div>
+        
+        <!-- Components Section -->
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-slate-600 dark:text-slate-300">Components</h3>
+            @if(canEditTeam(team.id)){
+              <button (click)="openAddComponentModal(team)"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 text-xs font-semibold rounded-md border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4"><path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" /></svg>
+                Add Component
+              </button>
+            }
+          </div>
+          @if (team.components.length > 0) {
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+              <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-800">
+                  <tr>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Component</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">SonarQube</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Nexus IQ</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Checkmarx</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-slate-800/50 divide-y divide-slate-200 dark:divide-slate-700">
+                  @for(component of team.components; track component.id) {
+                    @if (editingComponentId() !== component.id) {
+                      <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                          <p class="font-bold text-sm text-slate-900 dark:text-slate-100">{{ component.name }}</p>
+                          <p class="text-xs text-slate-500 dark:text-slate-400">v{{ component.version }}</p>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                          <select (change)="updateScan(team.id, component.id, 'sonarQube', $event)" [value]="component.sonarQube" [disabled]="!canEditTeam(team.id)"
+                                [class]="'w-32 text-xs rounded-md border-0 py-1 font-semibold shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed ' + getScanStatusColor(component.sonarQube)">
+                            @for(opt of scanOptions; track opt) { <option [value]="opt">{{opt}}</option> }
+                          </select>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                          <select (change)="updateScan(team.id, component.id, 'nexusIq', $event)" [value]="component.nexusIq" [disabled]="!canEditTeam(team.id)"
+                                [class]="'w-32 text-xs rounded-md border-0 py-1 font-semibold shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed ' + getScanStatusColor(component.nexusIq)">
+                            @for(opt of scanOptions; track opt) { <option [value]="opt">{{opt}}</option> }
+                          </select>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                          <select (change)="updateScan(team.id, component.id, 'checkmarx', $event)" [value]="component.checkmarx" [disabled]="!canEditTeam(team.id)"
+                                [class]="'w-32 text-xs rounded-md border-0 py-1 font-semibold shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed ' + getScanStatusColor(component.checkmarx)">
+                            @for(opt of scanOptions; track opt) { <option [value]="opt">{{opt}}</option> }
+                          </select>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                          @if(canEditTeam(team.id)) {
+                            <div class="flex items-center space-x-3">
+                              <button (click)="startEditComponent(component)" class="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors" title="Edit Component">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885l10.012-10.012a2 2 0 0 0-2.828-2.828L2.695 14.762Zm12.728-12.728a.5.5 0 0 0 0-.707l-1.414-1.414a.5.5 0 0 0-.707 0L11.95 2.121l2.121 2.121 1.414-1.414Z" /></svg>
+                              </button>
+                              <button (click)="onDeleteComponent(team.id, component.id)" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Delete Component">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-1.057.234-1.856.9-2.34 1.693A.75.75 0 0 0 4.25 7H15.75a.75.75 0 0 0 .59-.264c-.484-.792-1.283-1.458-2.34-1.692V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 2.5a1.25 1.25 0 0 1 1.25 1.25v.193a.75.75 0 0 0-.528.232l-.127.127a.75.75 0 0 1-1.06 0l-.127-.127a.75.75 0 0 0-.528-.232V3.75A1.25 1.25 0 0 1 10 2.5ZM3.5 8.75a.75.75 0 0 0-1.5 0v7.5c0 1.519 1.231 2.75 2.75 2.75h10.5A2.75 2.75 0 0 0 18 16.25v-7.5a.75.75 0 0 0-1.5 0v7.5a1.25 1.25 0 0 1-1.25 1.25H4.75A1.25 1.25 0 0 1 3.5 16.25v-7.5Z" clip-rule="evenodd" /></svg>
+                              </button>
+                            </div>
+                          }
+                        </td>
+                      </tr>
+                    } @else {
+                      <tr>
+                        <td colspan="5" class="p-0">
+                          <form [formGroup]="componentForm" (ngSubmit)="saveComponent(team.id, component.id)" class="grid grid-cols-5 gap-x-4 items-center p-2 bg-slate-50 dark:bg-slate-900/50">
+                            <div class="px-2 py-1">
+                                <input formControlName="name" placeholder="Component Name" class="w-full text-sm rounded-md dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                                <input formControlName="version" placeholder="Version" class="w-full text-xs mt-1 rounded-md dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="px-4 py-3 text-slate-400 text-sm">N/A in edit mode</div>
+                            <div class="px-4 py-3 text-slate-400 text-sm">N/A in edit mode</div>
+                            <div class="px-4 py-3 text-slate-400 text-sm">N/A in edit mode</div>
+                            <div class="px-4 py-3 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button type="submit" [disabled]="componentForm.invalid" class="text-green-600 hover:text-green-800 disabled:opacity-50">Save</button>
+                                <button type="button" (click)="cancelEditComponent()" class="text-slate-600 hover:text-slate-800">Cancel</button>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-slate-500 dark:text-slate-400 text-sm text-center py-4">No components for this project yet.</p>
+          }
+        </div>
+
+        <!-- User Stories Section -->
+        <div class="p-6 border-t border-slate-200 dark:border-slate-700">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-slate-600 dark:text-slate-300">User Stories</h3>
+            @if(canEditTeam(team.id)){
+              <button (click)="openAddUserStoryModal(team)"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 text-xs font-semibold rounded-md border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4"><path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" /></svg>
+                Add User Story
+              </button>
+            }
+          </div>
+          @if (team.userStories?.length > 0) {
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+              <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-800">
+                  <tr>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider w-24">Story ID</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Description</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Components</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">QA Status</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-slate-800/50 divide-y divide-slate-200 dark:divide-slate-700">
+                  @for(story of team.userStories; track story.id) {
+                    @if (editingUserStoryId() !== story.id) {
+                      <tr>
+                        <td class="px-4 py-3 align-top whitespace-nowrap text-sm font-semibold text-slate-500 dark:text-slate-400">{{ story.id }}</td>
+                        <td class="px-4 py-3 align-top text-sm text-slate-800 dark:text-slate-200 min-w-[300px] whitespace-pre-wrap">{{ story.description }}</td>
+                        <td class="px-4 py-3 align-top whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                          @if(story.components?.length > 0) {
+                              <div class="flex flex-wrap gap-1">
+                                @for(component of story.components; track component.id) {
+                                  <span class="px-2 py-0.5 text-xs bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 rounded-md">{{ component.name }}</span>
+                                }
+                              </div>
+                          } @else {
+                              <span>N/A</span>
+                          }
+                        </td>
+                        <td class="px-4 py-3 align-top whitespace-nowrap">
+                          <select (change)="updateQAStatus(team.id, story.id, $event)" [value]="story.qaStatus" [disabled]="!canEditTeam(team.id)"
+                              [class]="'w-36 text-xs rounded-md border-0 py-1 font-semibold shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed ' + getQAStatusColor(story.qaStatus)">
+                            @for(opt of qaStatusOptions; track opt) { <option [value]="opt">{{opt}}</option> }
+                          </select>
+                        </td>
+                        <td class="px-4 py-3 align-top whitespace-nowrap text-sm font-medium">
+                          @if(canEditTeam(team.id)) {
+                            <div class="flex items-center space-x-3">
+                              <button (click)="startEditUserStory(story)" class="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors" title="Edit User Story">
+                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885l10.012-10.012a2 2 0 0 0-2.828-2.828L2.695 14.762Zm12.728-12.728a.5.5 0 0 0 0-.707l-1.414-1.414a.5.5 0 0 0-.707 0L11.95 2.121l2.121 2.121 1.414-1.414Z" /></svg>
+                              </button>
+                              <button (click)="onDeleteUserStory(team.id, story.id)" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Delete User Story">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-1.057.234-1.856.9-2.34 1.693A.75.75 0 0 0 4.25 7H15.75a.75.75 0 0 0 .59-.264c-.484-.792-1.283-1.458-2.34-1.692V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 2.5a1.25 1.25 0 0 1 1.25 1.25v.193a.75.75 0 0 0-.528.232l-.127.127a.75.75 0 0 1-1.06 0l-.127-.127a.75.75 0 0 0-.528-.232V3.75A1.25 1.25 0 0 1 10 2.5ZM3.5 8.75a.75.75 0 0 0-1.5 0v7.5c0 1.519 1.231 2.75 2.75 2.75h10.5A2.75 2.75 0 0 0 18 16.25v-7.5a.75.75 0 0 0-1.5 0v7.5a1.25 1.25 0 0 1-1.25 1.25H4.75A1.25 1.25 0 0 1 3.5 16.25v-7.5Z" clip-rule="evenodd" /></svg>
+                              </button>
+                            </div>
+                          }
+                        </td>
+                      </tr>
+                    } @else {
+                       <tr>
+                        <td colspan="5" class="p-0">
+                          <form [formGroup]="userStoryForm" (ngSubmit)="saveUserStory(team.id, story.id)" class="grid grid-cols-5 gap-x-4 items-start p-2 bg-slate-50 dark:bg-slate-900/50">
+                            <div class="px-4 py-3 align-top whitespace-nowrap text-sm font-semibold text-slate-500 dark:text-slate-400">{{ story.id }}</div>
+                            <div class="px-2 py-1 col-span-2">
+                               <textarea formControlName="description" rows="3" class="w-full text-sm rounded-md dark:bg-slate-700 border-slate-300 dark:border-slate-600"></textarea>
+                            </div>
+                            <div class="px-4 py-3 align-top text-slate-400 text-sm">N/A in edit mode</div>
+                             <div class="px-4 py-3 align-top whitespace-nowrap text-sm font-medium space-x-2">
+                                <button type="submit" [disabled]="userStoryForm.invalid" class="text-green-600 hover:text-green-800 disabled:opacity-50">Save</button>
+                                <button type="button" (click)="cancelEditUserStory()" class="text-slate-600 hover:text-slate-800">Cancel</button>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-slate-500 dark:text-slate-400 text-sm text-center py-4">No user stories for this project yet.</p>
+          }
+        </div>
+
+      </div>
+      }
+    </div>
+  </main>
+  } @else {
+  <div class="flex justify-center items-center h-screen">
+    <p class="text-lg font-semibold">Loading release details...</p>
+  </div>
+  }
+</div>
+
+@if (isAddComponentModalOpen() && release() && selectedTeamForAddComponent()) {
+  <app-add-component 
+    [releaseId]="release()!.id" 
+    [team]="selectedTeamForAddComponent()!"
+    (closeModal)="closeAddComponentModal()">
+  </app-add-component>
+}
+
+@if (isAddUserStoryModalOpen() && release() && selectedTeamForAddUserStory()) {
+  <app-add-user-story 
+    [releaseId]="release()!.id" 
+    [team]="selectedTeamForAddUserStory()!"
+    (closeModal)="closeAddUserStoryModal()">
+  </app-add-user-story>
+}
+
+@if (isAddTeamModalOpen() && release()) {
+  <app-add-team 
+    [releaseId]="release()!.id"
+    (closeModal)="closeAddTeamModal()">
+  </app-add-team>
+}
