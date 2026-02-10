@@ -12,6 +12,8 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "baseHref": "/release-management-portal/",
+
             "outputPath": {
               "base": "./dist",
               "browser": "."
@@ -45,6 +47,9 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     }
